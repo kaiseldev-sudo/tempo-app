@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAJ-ZHEotvgUYrC7G9ockHFpz-WEdVDjT8',
-    appId: '1:753372682881:android:826fd8458bb11a58d68b80',
+    appId: '1:753372682881:android:d776e56b6890189fd68b80',
     messagingSenderId: '753372682881',
     projectId: 'boardexam-checker',
     storageBucket: 'boardexam-checker.firebasestorage.app',
@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '753372682881',
     projectId: 'boardexam-checker',
     storageBucket: 'boardexam-checker.firebasestorage.app',
-    iosBundleId: 'com.tempo.bracketbyte',
+    iosBundleId: 'com.tempo.tempo',
   );
 }

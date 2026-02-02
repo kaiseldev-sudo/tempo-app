@@ -11,6 +11,7 @@ class LevelState {
   final double progress;
   final int currentXp;
   final int dailyStreak;
+  final String lastCheckInDate;
   final int unlockedBadgeCount;
   final List<Badge> newlyUnlockedBadges;
   final bool leveledUp;
@@ -21,6 +22,7 @@ class LevelState {
     required this.progress,
     required this.currentXp,
     this.dailyStreak = 0,
+    this.lastCheckInDate = '',
     this.unlockedBadgeCount = 0,
     this.newlyUnlockedBadges = const [],
     this.leveledUp = false,
@@ -75,6 +77,7 @@ class GamificationNotifier extends Notifier<LevelState> {
       progress: 0.0,
       currentXp: 0,
       dailyStreak: 0,
+      lastCheckInDate: '',
       unlockedBadgeCount: 0,
     );
   }
@@ -92,11 +95,19 @@ class GamificationNotifier extends Notifier<LevelState> {
     final now = DateTime.now();
     final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
     
-    // Reset daily counters if it's a new day
+    // Reset daily counters and check streak if it's a new day
     if (_stats!.lastActiveDate != today) {
       _stats!.todayFocusMinutes = 0;
       _stats!.todayTasksCompleted = 0;
       _stats!.lastActiveDate = today;
+
+      // Reset streak if more than a day missed
+      final yesterdayDate = now.subtract(const Duration(days: 1));
+      final yesterday = '${yesterdayDate.year}-${yesterdayDate.month.toString().padLeft(2, '0')}-${yesterdayDate.day.toString().padLeft(2, '0')}';
+
+      if (_stats!.lastCheckInDate != today && _stats!.lastCheckInDate != yesterday) {
+        _stats!.dailyStreak = 0;
+      }
     }
   }
 
@@ -111,6 +122,7 @@ class GamificationNotifier extends Notifier<LevelState> {
       progress: progress.clamp(0.0, 1.0),
       currentXp: stats.currentXp,
       dailyStreak: stats.dailyStreak,
+      lastCheckInDate: stats.lastCheckInDate,
       unlockedBadgeCount: stats.unlockedBadgeIds.length,
       newlyUnlockedBadges: newBadges,
       leveledUp: leveledUp,
@@ -182,6 +194,31 @@ class GamificationNotifier extends Notifier<LevelState> {
 
     // 7. Update State
     state = _calculateState(_stats!, newBadges: unlockedBadges, leveledUp: leveledUp);
+  }
+
+  Future<void> checkIn() async {
+    if (_userId == null || _stats == null) return;
+
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    
+    if (_stats!.lastCheckInDate == today) return; // Already checked in today
+
+    final yesterdayDate = now.subtract(const Duration(days: 1));
+    final yesterday = '${yesterdayDate.year}-${yesterdayDate.month.toString().padLeft(2, '0')}-${yesterdayDate.day.toString().padLeft(2, '0')}';
+
+    // Update Streak
+    if (_stats!.lastCheckInDate == yesterday) {
+      _stats!.dailyStreak += 1;
+    } else {
+      _stats!.dailyStreak = 1;
+    }
+
+    _stats!.lastCheckInDate = today;
+    _stats!.lastActiveDate = today;
+
+    // Award Daily Login XP
+    await processAction(type: 'daily_login');
   }
 
   bool _evaluateUnlockCondition(Badge badge, {DateTime? sessionTime}) {

@@ -37,6 +37,9 @@ class UserStats extends HiveObject {
   @HiveField(10)
   String lastActiveDate; // Format: YYYY-MM-DD for comeback tracking
 
+  @HiveField(11)
+  String lastCheckInDate; // Format: YYYY-MM-DD for streak tracking
+
   UserStats({
     this.currentXp = 0,
     this.totalFocusMinutes = 0,
@@ -49,5 +52,6 @@ class UserStats extends HiveObject {
     this.todayTasksCompleted = 0,
     this.longestSingleSession = 0,
     this.lastActiveDate = '',
+    this.lastCheckInDate = '',
   });
 }

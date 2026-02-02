@@ -24,6 +24,7 @@ class UserStatsRepository {
         'todayTasksCompleted': stats.todayTasksCompleted,
         'longestSingleSession': stats.longestSingleSession,
         'lastActiveDate': stats.lastActiveDate,
+        'lastCheckInDate': stats.lastCheckInDate,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -49,6 +50,7 @@ class UserStatsRepository {
         todayTasksCompleted: data['todayTasksCompleted'] as int? ?? 0,
         longestSingleSession: data['longestSingleSession'] as int? ?? 0,
         lastActiveDate: data['lastActiveDate'] as String? ?? '',
+        lastCheckInDate: data['lastCheckInDate'] as String? ?? '',
       );
     });
   }

@@ -1,0 +1,19 @@
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/tempo-logo.png"
+  min_sdk_android: 21
+  
+  # Android adaptive icon
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/tempo-logo.png"
+  
+  # iOS specific
+  remove_alpha_ios: true
+  
+  # Web
+  web:
+    generate: true
+    image_path: "assets/images/tempo-logo.png"
+    background_color: "#000000"
+    theme_color: "#000000"

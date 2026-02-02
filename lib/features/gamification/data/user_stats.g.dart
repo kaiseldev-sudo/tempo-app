@@ -28,13 +28,14 @@ class UserStatsAdapter extends TypeAdapter<UserStats> {
       todayTasksCompleted: fields[8] as int,
       longestSingleSession: fields[9] as int,
       lastActiveDate: fields[10] as String,
+      lastCheckInDate: fields[11] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserStats obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.currentXp)
       ..writeByte(1)
@@ -56,7 +57,9 @@ class UserStatsAdapter extends TypeAdapter<UserStats> {
       ..writeByte(9)
       ..write(obj.longestSingleSession)
       ..writeByte(10)
-      ..write(obj.lastActiveDate);
+      ..write(obj.lastActiveDate)
+      ..writeByte(11)
+      ..write(obj.lastCheckInDate);
   }
 
   @override

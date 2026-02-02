@@ -7,25 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:753372682881:android:826fd8458bb11a58d68b80",
-        "android_client_info": {
-          "package_name": "com.pbec.preboardexamchecker"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAJ-ZHEotvgUYrC7G9ockHFpz-WEdVDjT8"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:753372682881:android:d776e56b6890189fd68b80",
         "android_client_info": {
           "package_name": "com.tempo.tempo"
