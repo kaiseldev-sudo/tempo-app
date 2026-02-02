@@ -11,19 +11,14 @@ class GamificationStatsSummary extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gamificationProvider);
-    final box = ref.read(userStatsBoxProvider);
-    // Directly fetching unlockedIds from box since LevelState might contain count only based on previous edit.
-    // Wait, in provider I stored counts. I should update LevelState to just store the IDs list for consistency?
-    // Actually box access here is fine, OR update LevelState.
-    // Let's use box to get IDs for navigation.
-    
-    // Better: Update LevelState to carry unlockedIds. But for now I'll just use box.
-    // Wait, ref.read(userValues) is cleaner.
+    final userStatsAsync = ref.watch(userStatsStreamProvider);
     
     List<String> unlockedIds = [];
-    if (box.isNotEmpty) {
-      unlockedIds = box.values.first.unlockedBadgeIds;
-    }
+    userStatsAsync.whenData((stats) {
+      if (stats != null) {
+        unlockedIds = stats.unlockedBadgeIds;
+      }
+    });
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),

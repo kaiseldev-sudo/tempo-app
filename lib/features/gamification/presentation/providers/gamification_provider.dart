@@ -1,9 +1,9 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../../domain/game_constants.dart';
 import '../../domain/badge_model.dart';
 import '../../data/user_stats.dart';
+import '../../data/user_stats_repository.dart';
+import '../../../../core/auth/auth_provider.dart';
 
 class LevelState {
   final int currentLevel;
@@ -27,113 +27,151 @@ class LevelState {
   });
 }
 
-final userStatsBoxProvider = Provider<Box<UserStats>>((ref) {
-  return Hive.box<UserStats>('user_stats');
+// Repository Provider
+final userStatsRepositoryProvider = Provider((ref) => UserStatsRepository());
+
+// User Stats Stream Provider
+final userStatsStreamProvider = StreamProvider<UserStats?>((ref) {
+  final userId = ref.watch(userIdProvider);
+  final repository = ref.watch(userStatsRepositoryProvider);
+
+  if (userId == null) {
+    return Stream.value(null);
+  }
+
+  return repository.getUserStats(userId);
 });
 
+// Gamification Provider
 final gamificationProvider = NotifierProvider<GamificationNotifier, LevelState>(GamificationNotifier.new);
 
 class GamificationNotifier extends Notifier<LevelState> {
-  late Box<UserStats> _box;
-  late UserStats _stats;
+  UserStats? _stats;
+  String? _userId;
 
   @override
   LevelState build() {
-    _box = ref.watch(userStatsBoxProvider);
-    _initStats();
-    return _initialState();
-  }
-
-  LevelState _initialState() {
-     // We will update this in _initStats logic actually, or just return default then update.
-     // Better: Calculate state from _stats immediately if possible.
-     // But _initStats might be async? No, Hive box is already open.
-     if (_box.isEmpty) {
-       _stats = UserStats();
-       _box.add(_stats);
-     } else {
-       _stats = _box.values.first;
-     }
-     
-     final level = GameConstants.getLevelForXp(_stats.currentXp);
-     final progress = GameConstants.getProgressToNextLevel(_stats.currentXp);
-     return LevelState(
-       currentLevel: level.level,
-       title: level.title,
-       progress: progress,
-       currentXp: _stats.currentXp,
-       dailyStreak: _stats.dailyStreak,
-       unlockedBadgeCount: _stats.unlockedBadgeIds.length,
-     );
-  }
-
-  void _initStats() {
-    // Moved logic to build/initialState
-  }
-
-  void _updateState({List<Badge> newBadges = const [], bool leveledUp = false}) {
-    final level = GameConstants.getLevelForXp(_stats.currentXp);
-    final progress = GameConstants.getProgressToNextLevel(_stats.currentXp);
+    _userId = ref.watch(userIdProvider);
     
-    state = LevelState(
+    // Watch the stats stream
+    ref.listen(userStatsStreamProvider, (previous, next) {
+      next.whenData((stats) {
+        if (stats != null) {
+          _stats = stats;
+          state = _calculateState(stats);
+        }
+      });
+    });
+
+    // Initialize stats if needed
+    if (_userId != null) {
+      _initializeStats();
+    }
+
+    return LevelState(
+      currentLevel: 1,
+      title: 'Beginner',
+      progress: 0.0,
+      currentXp: 0,
+      dailyStreak: 0,
+      unlockedBadgeCount: 0,
+    );
+  }
+
+  Future<void> _initializeStats() async {
+    if (_userId == null) return;
+    
+    final repository = ref.read(userStatsRepositoryProvider);
+    await repository.initializeUserStats(_userId!);
+  }
+
+  LevelState _calculateState(UserStats stats, {List<Badge> newBadges = const [], bool leveledUp = false}) {
+    final level = GameConstants.getLevelForXp(stats.currentXp);
+    final nextLevel = GameConstants.getLevelForXp(stats.currentXp + 1);
+    final progress = (stats.currentXp - level.xpRequired) / (nextLevel.xpRequired - level.xpRequired);
+
+    return LevelState(
       currentLevel: level.level,
       title: level.title,
-      progress: progress,
-      currentXp: _stats.currentXp,
-      dailyStreak: _stats.dailyStreak,
-      unlockedBadgeCount: _stats.unlockedBadgeIds.length,
+      progress: progress.clamp(0.0, 1.0),
+      currentXp: stats.currentXp,
+      dailyStreak: stats.dailyStreak,
+      unlockedBadgeCount: stats.unlockedBadgeIds.length,
       newlyUnlockedBadges: newBadges,
       leveledUp: leveledUp,
     );
   }
 
-  // CORE LOGIC: Process Action (Session/Task Complete)
   Future<void> processAction({required String type, int? minutes}) async {
-    // 1. Add Base XP
+    if (_userId == null || _stats == null) return;
+
+    final repository = ref.read(userStatsRepositoryProvider);
+    
+    // 1. Calculate Base XP
     int xpToAdd = GameConstants.xpSources[type] ?? 0;
     
-    // 2. Update Stats
+    // 2. Update Stats based on action type
     if (type == 'focus_session') {
-      _stats.sessionsCompleted += 1;
-      _stats.totalFocusMinutes += (minutes ?? 0);
+      _stats!.sessionsCompleted += 1;
+      _stats!.totalFocusMinutes += (minutes ?? 0);
     } else if (type == 'task_completed') {
-      _stats.tasksCompleted += 1;
+      _stats!.tasksCompleted += 1;
     }
     
-    // 3. Check Badges
-    List<Badge> unlocked = [];
+    // 3. Check for Badge Unlocks
+    List<Badge> unlockedBadges = [];
     for (var badge in BadgeRepository.allBadges) {
-      if (!_stats.unlockedBadgeIds.contains(badge.id)) {
+      if (!_stats!.unlockedBadgeIds.contains(badge.id)) {
         if (_evaluateUnlockCondition(badge)) {
-          unlocked.add(badge);
-          _stats.unlockedBadgeIds.add(badge.id);
-          xpToAdd += badge.xp; // Add Badge XP
+          unlockedBadges.add(badge);
+          _stats!.unlockedBadgeIds.add(badge.id);
+          xpToAdd += badge.xp;
+          
+          // Record badge unlock
+          await repository.recordBadgeUnlock(
+            userId: _userId!,
+            badgeId: badge.id,
+            badgeTitle: badge.title,
+          );
         }
       }
     }
 
-    // 4. Level Up Check
-    final oldLevel = GameConstants.getLevelForXp(_stats.currentXp).level;
-    _stats.currentXp += xpToAdd;
-    final newLevel = GameConstants.getLevelForXp(_stats.currentXp).level;
+    // 4. Check for Level Up
+    final oldLevel = GameConstants.getLevelForXp(_stats!.currentXp).level;
+    _stats!.currentXp += xpToAdd;
+    final newLevel = GameConstants.getLevelForXp(_stats!.currentXp).level;
     bool leveledUp = newLevel > oldLevel;
 
-    // 5. Save & Emit
-    await _stats.save();
-    _updateState(newBadges: unlocked, leveledUp: leveledUp);
+    // 5. Save to Firestore
+    await repository.saveUserStats(_stats!, _userId!);
+    
+    // 6. Record XP Transaction
+    await repository.recordXpTransaction(
+      userId: _userId!,
+      xpAmount: xpToAdd,
+      source: type,
+      description: '${type.replaceAll('_', ' ')} - ${minutes ?? 0}m',
+    );
+
+    // 7. Update State
+    state = _calculateState(_stats!, newBadges: unlockedBadges, leveledUp: leveledUp);
   }
 
   bool _evaluateUnlockCondition(Badge badge) {
+    if (_stats == null) return false;
+
     switch (badge.unlockType) {
       case 'session_count':
-        return _stats.sessionsCompleted >= badge.unlockValue;
+        return _stats!.sessionsCompleted >= badge.unlockValue;
+      case 'total_focus_hours':
+        return _stats!.totalFocusMinutes >= (badge.unlockValue * 60);
       case 'daily_streak':
-        return _stats.dailyStreak >= badge.unlockValue;
+        return _stats!.dailyStreak >= badge.unlockValue;
       case 'single_session_minutes':
-         // Simplified logic
-        return false; 
+        return _stats!.totalFocusMinutes >= badge.unlockValue; // Simplified for MVP
       case 'task_completed':
-        return _stats.tasksCompleted >= badge.unlockValue;
+        return _stats!.tasksCompleted >= badge.unlockValue;
       default:
         return false;
     }

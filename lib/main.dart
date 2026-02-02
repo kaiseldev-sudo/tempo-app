@@ -8,8 +8,24 @@ import 'features/gamification/presentation/providers/gamification_provider.dart'
 import 'features/gamification/presentation/widgets/game_overlay_listener.dart';
 import 'main_screen.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      // Sign in anonymously if not already signed in
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+  } catch (e) {
+      debugPrint("Firebase initialization failed: $e");
+      // Continue anyway for now
+  }
   await Hive.initFlutter();
   Hive.registerAdapter(TimeEntryAdapter());
   Hive.registerAdapter(UserStatsAdapter());

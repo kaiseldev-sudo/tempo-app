@@ -37,7 +37,7 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
     _titleController.text = "Work Session";
   }
 
-  void _save() {
+  void _save() async {
     final newEntry = TimeEntry(
       title: _titleController.text,
       category: _category,
@@ -46,18 +46,29 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
       startTime: ref.read(selectedDateProvider), // Use selected date
     );
 
-    final box = ref.read(ledgerBoxProvider);
-    box.add(newEntry);
+    try {
+      // Save to Firestore
+      await ref.read(addTimeEntryProvider)(newEntry);
 
-    // Trigger Gamification
-    if (_type == 'invested') {
-      ref.read(gamificationProvider.notifier).processAction(
-        type: 'focus_session',
-        minutes: _durationMinutes,
-      );
-    } // Could add 'spent' logic if desired (Start small)
+      // Trigger Gamification
+      if (_type == 'invested') {
+        ref.read(gamificationProvider.notifier).processAction(
+          type: 'focus_session',
+          minutes: _durationMinutes,
+        );
+      }
 
-    Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      // Show error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save entry: $e')),
+        );
+      }
+    }
   }
 
   @override

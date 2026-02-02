@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:tempo/features/ledger/domain/time_entry.dart';
+import '../../domain/time_entry.dart';
+import '../../data/time_entry_repository.dart';
+import '../../../../core/auth/auth_provider.dart';
 
-final ledgerBoxProvider = Provider<Box<TimeEntry>>((ref) {
-  return Hive.box<TimeEntry>('time_entries');
-});
+// Repository Provider
+final timeEntryRepositoryProvider = Provider((ref) => TimeEntryRepository());
 
+// Selected Date Provider
 final selectedDateProvider = NotifierProvider<SelectedDateNotifier, DateTime>(SelectedDateNotifier.new);
 
 class SelectedDateNotifier extends Notifier<DateTime> {
@@ -20,23 +20,29 @@ class SelectedDateNotifier extends Notifier<DateTime> {
   }
 }
 
-final ledgerEntriesProvider = StreamProvider.autoDispose<List<TimeEntry>>((ref) async* {
-  final box = ref.watch(ledgerBoxProvider);
+// Ledger Entries Provider (Firestore Stream)
+final ledgerEntriesProvider = StreamProvider.autoDispose<List<TimeEntry>>((ref) {
+  final userId = ref.watch(userIdProvider);
   final selectedDate = ref.watch(selectedDateProvider);
+  final repository = ref.watch(timeEntryRepositoryProvider);
 
-  List<TimeEntry> filter() {
-    final entries = box.values.where((e) {
-      return DateUtils.isSameDay(e.startTime, selectedDate);
-    }).toList();
+  if (userId == null) {
+    return Stream.value([]);
+  }
+
+  return repository.getEntriesByDate(userId, selectedDate);
+});
+
+// Add Time Entry Action
+final addTimeEntryProvider = Provider((ref) {
+  return (TimeEntry entry) async {
+    final userId = ref.read(userIdProvider);
+    final repository = ref.read(timeEntryRepositoryProvider);
     
-    // Sort by start time descending (newest first)
-    entries.sort((a, b) => b.startTime.compareTo(a.startTime));
-    return entries;
-  }
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
-  yield filter();
-
-  await for (final _ in box.watch()) {
-    yield filter();
-  }
+    await repository.saveTimeEntry(entry, userId);
+  };
 });

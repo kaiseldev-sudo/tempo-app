@@ -50,6 +50,9 @@ dependencies:
   confetti: ^0.8.0
   simple_animations: ^5.2.0
   package_info_plus: ^9.0.0
+  firebase_core: ^4.4.0
+  cloud_firestore: ^6.1.2
+  firebase_auth: ^6.1.4
 
 dev_dependencies:
   flutter_test:
