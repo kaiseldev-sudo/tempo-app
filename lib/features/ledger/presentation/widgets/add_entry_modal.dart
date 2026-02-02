@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tempo/features/ledger/domain/time_entry.dart';
 import '../../../../features/gamification/presentation/providers/gamification_provider.dart';
 import '../providers/ledger_provider.dart';
@@ -27,6 +26,7 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
   String _category = 'Work';
   int _durationMinutes = 60;
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _notesController = TextEditingController();
 
   final List<String> _investedCategories = ['Work', 'Study', 'Exercise', 'Reading', 'Creative'];
   final List<String> _spentCategories = ['Gaming', 'Social Media', 'TV', 'Oversleeping', 'Commute'];
@@ -38,37 +38,53 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
   }
 
   void _save() async {
-    final newEntry = TimeEntry(
-      title: _titleController.text,
-      category: _category,
-      type: _type,
-      durationMinutes: _durationMinutes,
-      startTime: ref.read(selectedDateProvider), // Use selected date
-    );
+    // 1. Capture all necessary state before closing the modal
+    final title = _titleController.text;
+    final notes = _notesController.text;
+    final type = _type;
+    final category = _category;
+    final duration = _durationMinutes;
+    final date = ref.read(selectedDateProvider);
+    
+    final gamificationNotifier = ref.read(gamificationProvider.notifier);
+    final entrySaver = ref.read(addTimeEntryProvider);
+
+    // 2. Close the modal immediately to avoid UI conflicts with badge modals
+    if (mounted) {
+      Navigator.pop(context);
+    }
+
+    int? xpEarned;
+    List<String>? badgeIds;
 
     try {
-      // Save to Firestore
-      await ref.read(addTimeEntryProvider)(newEntry);
-
-      // Trigger Gamification
-      if (_type == 'invested') {
-        ref.read(gamificationProvider.notifier).processAction(
+      // 3. Trigger Gamification
+      if (type == 'invested') {
+        final result = await gamificationNotifier.processAction(
           type: 'focus_session',
-          minutes: _durationMinutes,
-          sessionTime: newEntry.startTime,
+          minutes: duration,
+          sessionTime: date,
         );
+        xpEarned = result['xpEarned'] as int?;
+        badgeIds = List<String>.from(result['badgeIds'] ?? []);
       }
 
-      if (mounted) {
-        Navigator.pop(context);
-      }
+      // 4. Create and save entry
+      final newEntry = TimeEntry(
+        title: title,
+        category: category,
+        type: type,
+        durationMinutes: duration,
+        startTime: date,
+        notes: notes,
+        xpEarned: xpEarned,
+        unlockedBadgeIds: badgeIds,
+      );
+
+      await entrySaver(newEntry);
     } catch (e) {
-      // Show error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save entry: $e')),
-        );
-      }
+      debugPrint('Failed to save entry: $e');
+      // For a better UX, we could use a global snackbar here if needed
     }
   }
 
@@ -76,113 +92,153 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
   Widget build(BuildContext context) {
     final categories = _type == 'invested' ? _investedCategories : _spentCategories;
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Row(
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
-              ),
-              Expanded(
-                child: Text(
-                  "New Entry",
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+            // Header
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
                 ),
-              ),
-              const SizedBox(width: 48), // Balance close button
-            ],
-          ),
-          const Gap(24),
-
-          // Type Selector
-          Row(
-            children: [
-              _buildTypeButton('invested', "Invested"),
-              const Gap(12),
-              _buildTypeButton('spent', "Spent"),
-            ],
-          ),
-          const Gap(24),
-
-          // Duration
-          Center(
-            child: Text(
-              _formatDuration(_durationMinutes),
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    "New Entry",
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 48), // Balance close button
+              ],
             ),
-          ),
-          const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTimeChip(15),
-              const Gap(8),
-              _buildTimeChip(30),
-              const Gap(8),
-              _buildTimeChip(60),
-              const Gap(8),
-              _buildTimeChip(90),
-            ],
-          ),
-          const Gap(24),
-
-          // Category
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: categories.map((c) {
-              final isSelected = _category == c;
-              return ChoiceChip(
-                label: Text(c),
-                selected: isSelected,
-                onSelected: (val) {
-                  if (val) setState(() {
-                    _category = c;
-                    _titleController.text = "$c Session";
-                  });
-                },
-                selectedColor: Colors.black,
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black,
-                  fontWeight: FontWeight.w500,
+            const Gap(24),
+  
+            // Type Selector
+            Row(
+              children: [
+                _buildTypeButton('invested', "Invested"),
+                const Gap(12),
+                _buildTypeButton('spent', "Spent"),
+              ],
+            ),
+            const Gap(24),
+  
+            // Duration
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    if (_durationMinutes > 5) {
+                      setState(() => _durationMinutes -= 5);
+                    }
+                  },
+                  icon: const Icon(Icons.remove_circle_outline, size: 32),
+                  color: Colors.grey[400],
                 ),
-                backgroundColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide.none,
+                const Gap(16),
+                Text(
+                  _formatDuration(_durationMinutes),
+                  style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
                 ),
-              );
-            }).toList(),
-          ),
-          const Gap(32),
-
-          // Save Button
-          ElevatedButton(
-            onPressed: _save,
-            child: const Text("Save"),
-          ),
-        ],
+                const Gap(16),
+                IconButton(
+                  onPressed: () {
+                    setState(() => _durationMinutes += 5);
+                  },
+                  icon: const Icon(Icons.add_circle_outline, size: 32),
+                  color: Colors.grey[400],
+                ),
+              ],
+            ),
+            const Gap(16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTimeChip(15),
+                const Gap(8),
+                _buildTimeChip(30),
+                const Gap(8),
+                _buildTimeChip(60),
+                const Gap(8),
+                _buildTimeChip(90),
+              ],
+            ),
+            const Gap(24),
+  
+            // Category
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: categories.map((c) {
+                final isSelected = _category == c;
+                return ChoiceChip(
+                  label: Text(c),
+                  selected: isSelected,
+                  onSelected: (val) {
+                    if (val) {
+                      setState(() {
+                        _category = c;
+                        _titleController.text = "$c Session";
+                      });
+                    }
+                  },
+                  selectedColor: Colors.black,
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  backgroundColor: Colors.grey[100],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: BorderSide.none,
+                  ),
+                );
+              }).toList(),
+            ),
+            const Gap(24),
+  
+            // Custom Note
+            TextField(
+              controller: _notesController,
+              decoration: InputDecoration(
+                hintText: "Add a note (optional)...",
+                filled: true,
+                fillColor: Colors.grey[50],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.all(16),
+              ),
+              maxLines: 2,
+            ),
+            const Gap(32),
+  
+            // Save Button
+            ElevatedButton(
+              onPressed: _save,
+              child: const Text("Save"),
+            ),
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildTypeButton(String type, String label) {
     final isSelected = _type == type;

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:gap/gap.dart';
-import 'package:intl/intl.dart';
 import 'package:tempo/features/ledger/presentation/providers/ledger_provider.dart';
+import 'activity_ring.dart';
 
 class MonthViewModal extends ConsumerStatefulWidget {
   const MonthViewModal({super.key});
@@ -29,6 +29,10 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
     super.initState();
     // Initialize with currently selected date from provider
     _focusedDay = ref.read(selectedDateProvider);
+    // Sync with focused day provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(calendarFocusedDayProvider.notifier).set(_focusedDay);
+    });
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -38,6 +42,8 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
       setState(() {
         _focusedDay = focusedDay;
       });
+      // Update global focused day provider
+      ref.read(calendarFocusedDayProvider.notifier).set(focusedDay);
       // Close modal after selection
       Navigator.pop(context);
     }
@@ -46,6 +52,7 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedDateProvider);
+    final monthlyActivity = ref.watch(monthlyActivityProvider);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.65, // Occupy ~2/3 of screen
@@ -95,7 +102,10 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
               selectedDayPredicate: (day) => isSameDay(selectedDate, day),
               onDaySelected: _onDaySelected,
               onPageChanged: (focusedDay) {
-                _focusedDay = focusedDay;
+                setState(() {
+                  _focusedDay = focusedDay;
+                });
+                ref.read(calendarFocusedDayProvider.notifier).set(focusedDay);
               },
               calendarFormat: CalendarFormat.month,
               startingDayOfWeek: StartingDayOfWeek.monday,
@@ -106,27 +116,99 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                 leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black),
                 rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black),
               ),
-              calendarStyle: CalendarStyle(
-                selectedDecoration: const BoxDecoration(
+              calendarStyle: const CalendarStyle(
+                selectedDecoration: BoxDecoration(
                   color: Colors.black,
                   shape: BoxShape.circle,
                 ),
                 todayDecoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 2),
                 ),
-                todayTextStyle: const TextStyle(
+                todayTextStyle: TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
-                defaultTextStyle: const TextStyle(fontWeight: FontWeight.w500),
-                weekendTextStyle: const TextStyle(color: Colors.grey),
+                defaultTextStyle: TextStyle(fontWeight: FontWeight.w500),
+                weekendTextStyle: TextStyle(color: Colors.grey),
                 outsideDaysVisible: false,
               ),
               daysOfWeekStyle: const DaysOfWeekStyle(
                 weekdayStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 weekendStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey),
+              ),
+              calendarBuilders: CalendarBuilders(
+                defaultBuilder: (context, day, focusedDay) {
+                  final activity = monthlyActivity.value?[DateTime(day.year, day.month, day.day)];
+                  return Center(
+                    child: ActivityRing(
+                      investedProgress: activity?.investedProgress ?? 0.0,
+                      spentProgress: activity?.spentProgress ?? 0.0,
+                      child: Text(
+                        '${day.day}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  );
+                },
+                holidayBuilder: (context, day, focusedDay) {
+                  final activity = monthlyActivity.value?[DateTime(day.year, day.month, day.day)];
+                  return Center(
+                    child: ActivityRing(
+                      investedProgress: activity?.investedProgress ?? 0.0,
+                      spentProgress: activity?.spentProgress ?? 0.0,
+                      child: Text(
+                        '${day.day}',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  );
+                },
+                todayBuilder: (context, day, focusedDay) {
+                  final activity = monthlyActivity.value?[DateTime(day.year, day.month, day.day)];
+                  return Center(
+                    child: ActivityRing(
+                      investedProgress: activity?.investedProgress ?? 0.0,
+                      spentProgress: activity?.spentProgress ?? 0.0,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.black, width: 2),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '${day.day}',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                selectedBuilder: (context, day, focusedDay) {
+                  return Center(
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '${day.day}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

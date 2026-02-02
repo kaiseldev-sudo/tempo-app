@@ -107,4 +107,14 @@ class UserStatsRepository {
       throw Exception('Failed to record badge unlock: $e');
     }
   }
+  // Get XP History
+  Stream<List<Map<String, dynamic>>> getXpHistory(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('xp_transactions')
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
+  }
 }

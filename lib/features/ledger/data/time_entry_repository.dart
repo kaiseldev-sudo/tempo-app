@@ -21,6 +21,8 @@ class TimeEntryRepository {
         'durationMinutes': entry.durationMinutes,
         'startTime': Timestamp.fromDate(entry.startTime),
         'notes': entry.notes,
+        'xpEarned': entry.xpEarned,
+        'unlockedBadgeIds': entry.unlockedBadgeIds,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -49,6 +51,8 @@ class TimeEntryRepository {
           durationMinutes: data['durationMinutes'] as int,
           startTime: (data['startTime'] as Timestamp).toDate(),
           notes: data['notes'] as String?,
+          xpEarned: data['xpEarned'] as int?,
+          unlockedBadgeIds: (data['unlockedBadgeIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
         );
       }).toList();
     });
@@ -70,6 +74,8 @@ class TimeEntryRepository {
           durationMinutes: data['durationMinutes'] as int,
           startTime: (data['startTime'] as Timestamp).toDate(),
           notes: data['notes'] as String?,
+          xpEarned: data['xpEarned'] as int?,
+          unlockedBadgeIds: (data['unlockedBadgeIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
         );
       }).toList();
     });
@@ -106,6 +112,8 @@ class TimeEntryRepository {
           durationMinutes: data['durationMinutes'] as int,
           startTime: (data['startTime'] as Timestamp).toDate(),
           notes: data['notes'] as String?,
+          xpEarned: data['xpEarned'] as int?,
+          unlockedBadgeIds: (data['unlockedBadgeIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
         );
       }).toList();
     });

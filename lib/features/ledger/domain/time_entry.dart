@@ -26,6 +26,12 @@ class TimeEntry extends HiveObject {
   @HiveField(6)
   final String? notes;
 
+  @HiveField(7)
+  final int? xpEarned;
+
+  @HiveField(8)
+  final List<String>? unlockedBadgeIds;
+
   TimeEntry({
     String? id,
     required this.title,
@@ -34,5 +40,7 @@ class TimeEntry extends HiveObject {
     required this.durationMinutes,
     required this.startTime,
     this.notes,
+    this.xpEarned,
+    this.unlockedBadgeIds,
   }) : id = id ?? const Uuid().v4();
 }

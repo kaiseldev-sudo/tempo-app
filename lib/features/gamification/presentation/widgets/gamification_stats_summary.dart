@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../providers/gamification_provider.dart';
 import '../badges_screen.dart';
-import '../../domain/badge_model.dart';
+import '../xp_history_screen.dart';
 
 class GamificationStatsSummary extends ConsumerWidget {
   const GamificationStatsSummary({super.key});
@@ -27,102 +27,133 @@ class GamificationStatsSummary extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Column(
         children: [
-          Row(
-            children: [
-              // Level Info
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Level ${gameState.currentLevel}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    gameState.title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // XP Progress Circle
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 50,
-                    height: 50,
-                    child: CircularProgressIndicator(
-                      value: gameState.progress,
-                      backgroundColor: Colors.grey[200],
-                      color: Colors.amber,
-                      strokeWidth: 6,
-                    ),
-                  ),
-                  Text(
-                    '${(gameState.progress * 100).toInt()}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const Gap(16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Streak
-              _buildCompactStat(
-                icon: Icons.local_fire_department,
-                value: '${gameState.dailyStreak}',
-                label: 'Streak',
-                color: Colors.orange,
-              ),
-              
-              // Divider
-              Container(width: 1, height: 40, color: Colors.grey[300]),
-              
-              // Badges
-              GestureDetector(
-                onTap: () {
-                   Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => BadgesScreen(
-                        unlockedBadgeIds: unlockedIds,
+          // Level & Progress Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF7ED), // Soft minimalist orange
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: const Color(0xFFFFEDD5)), // Subtle orange-tinted border
+              // Removed boxShadow (glow effect) as requested
+            ),
+            child: Row(
+              children: [
+                // Level Info
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Level ${gameState.currentLevel}',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                  );
-                },
-                child: _buildCompactStat(
-                  icon: Icons.emoji_events,
+                    Text(
+                      gameState.title.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[500],
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                // XP Progress Circle (Added a subtle animation here too)
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: gameState.progress),
+                  duration: const Duration(milliseconds: 1500),
+                  curve: Curves.easeOutBack,
+                  builder: (context, value, child) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 54,
+                          height: 54,
+                          child: CircularProgressIndicator(
+                            value: value,
+                            backgroundColor: Colors.grey[100],
+                            color: Colors.black,
+                            strokeWidth: 5,
+                            strokeCap: StrokeCap.round,
+                          ),
+                        ),
+                        Text(
+                          '${(value * 100).toInt()}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Gap(12),
+          // Stats Grid
+          Row(
+            children: [
+              // Streak
+              Expanded(
+                child: _buildStatContainer(
+                  icon: Icons.local_fire_department_rounded,
+                  value: '${gameState.dailyStreak}',
+                  label: 'Streak',
+                  color: Colors.orange,
+                  onTap: () {},
+                  index: 0,
+                ),
+              ),
+              const Gap(12),
+              // Badges
+              Expanded(
+                child: _buildStatContainer(
+                  icon: Icons.emoji_events_rounded,
                   value: '${unlockedIds.length}',
                   label: 'Badges',
                   color: Colors.amber,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BadgesScreen(
+                          unlockedBadgeIds: unlockedIds,
+                        ),
+                      ),
+                    );
+                  },
+                  index: 1,
                 ),
               ),
-              
-              // Divider
-              Container(width: 1, height: 40, color: Colors.grey[300]),
-              
-              // Total XP
-              _buildCompactStat(
-                icon: Icons.stars,
-                value: '${gameState.currentXp}',
-                label: 'Total XP',
-                color: Colors.purple,
+              const Gap(12),
+              // XP
+              Expanded(
+                child: _buildStatContainer(
+                  icon: Icons.stars_rounded,
+                  value: '${gameState.currentXp}',
+                  label: 'Total XP',
+                  color: Colors.purple,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const XPHistoryScreen(),
+                      ),
+                    );
+                  },
+                  index: 2,
+                ),
               ),
             ],
           ),
-          const Gap(24),
+          const Gap(20),
           // Check In Button (Conditional)
           if (gameState.lastCheckInDate != today)
             SizedBox(
@@ -132,23 +163,23 @@ class GamificationStatsSummary extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   elevation: 0,
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_outline, size: 20),
-                    Gap(8),
+                    Icon(Icons.check_circle_rounded, size: 20),
+                    Gap(10),
                     Text(
-                      'Check In',
+                      'Check In Today',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
@@ -158,22 +189,23 @@ class GamificationStatsSummary extends ConsumerWidget {
           else
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey[200]!),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle, size: 20, color: Colors.green[600]),
-                  const Gap(8),
+                  Icon(Icons.check_circle_rounded, size: 20, color: Colors.green[600]),
+                  const Gap(10),
                   Text(
-                    'Checked In for Today',
+                    'Daily Check-in Complete',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -184,35 +216,57 @@ class GamificationStatsSummary extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactStat({
+  Widget _buildStatContainer({
     required IconData icon,
     required String value,
     required String label,
     required Color color,
+    required VoidCallback onTap,
+    required int index,
   }) {
-    return Column(
-      children: [
-        Row(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
           children: [
-            Icon(icon, color: color, size: 20),
-            const Gap(4),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.5, end: 1.0),
+              duration: Duration(milliseconds: 600 + (index * 200)),
+              curve: Curves.elasticOut,
+              builder: (context, scale, child) {
+                return Transform.scale(
+                  scale: scale,
+                  child: Icon(icon, color: color, size: 26),
+                );
+              },
+            ),
+            const Gap(8),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
+                letterSpacing: -0.5,
+              ),
+            ),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[500],
               ),
             ),
           ],
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
+

@@ -44,6 +44,18 @@ final userStatsStreamProvider = StreamProvider<UserStats?>((ref) {
   return repository.getUserStats(userId);
 });
 
+// XP History Provider
+final xpHistoryProvider = StreamProvider<List<Map<String, dynamic>>>((ref) {
+  final userId = ref.watch(userIdProvider);
+  final repository = ref.watch(userStatsRepositoryProvider);
+
+  if (userId == null) {
+    return Stream.value([]);
+  }
+
+  return repository.getXpHistory(userId);
+});
+
 // Gamification Provider
 final gamificationProvider = NotifierProvider<GamificationNotifier, LevelState>(GamificationNotifier.new);
 
@@ -113,8 +125,7 @@ class GamificationNotifier extends Notifier<LevelState> {
 
   LevelState _calculateState(UserStats stats, {List<Badge> newBadges = const [], bool leveledUp = false}) {
     final level = GameConstants.getLevelForXp(stats.currentXp);
-    final nextLevel = GameConstants.getLevelForXp(stats.currentXp + 1);
-    final progress = (stats.currentXp - level.xpRequired) / (nextLevel.xpRequired - level.xpRequired);
+    final progress = GameConstants.getProgressToNextLevel(stats.currentXp);
 
     return LevelState(
       currentLevel: level.level,
@@ -129,12 +140,12 @@ class GamificationNotifier extends Notifier<LevelState> {
     );
   }
 
-  Future<void> processAction({
+  Future<Map<String, dynamic>> processAction({
     required String type,
     int? minutes,
     DateTime? sessionTime,
   }) async {
-    if (_userId == null || _stats == null) return;
+    if (_userId == null || _stats == null) return {'xpEarned': 0, 'badgeIds': []};
 
     final repository = ref.read(userStatsRepositoryProvider);
     
@@ -158,10 +169,12 @@ class GamificationNotifier extends Notifier<LevelState> {
     
     // 3. Check for Badge Unlocks
     List<Badge> unlockedBadges = [];
+    List<String> unlockedBadgeIds = [];
     for (var badge in BadgeRepository.allBadges) {
       if (!_stats!.unlockedBadgeIds.contains(badge.id)) {
         if (_evaluateUnlockCondition(badge, sessionTime: sessionTime)) {
           unlockedBadges.add(badge);
+          unlockedBadgeIds.add(badge.id);
           _stats!.unlockedBadgeIds.add(badge.id);
           xpToAdd += badge.xp;
           
@@ -194,6 +207,11 @@ class GamificationNotifier extends Notifier<LevelState> {
 
     // 7. Update State
     state = _calculateState(_stats!, newBadges: unlockedBadges, leveledUp: leveledUp);
+    
+    return {
+      'xpEarned': xpToAdd,
+      'badgeIds': unlockedBadgeIds,
+    };
   }
 
   Future<void> checkIn() async {

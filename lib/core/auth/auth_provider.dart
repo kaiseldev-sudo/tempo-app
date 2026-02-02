@@ -12,7 +12,7 @@ final userIdProvider = Provider<String?>((ref) {
   return authState.when(
     data: (user) => user?.uid,
     loading: () => null,
-    error: (_, __) => null,
+    error: (error, stack) => null,
   );
 });
 

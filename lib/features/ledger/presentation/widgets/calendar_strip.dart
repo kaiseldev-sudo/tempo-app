@@ -76,7 +76,7 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: _dates.length,
-        separatorBuilder: (_, __) => const Gap(10),
+        separatorBuilder: (_, index) => const Gap(10),
         itemBuilder: (context, index) {
           final date = _dates[index];
           final isSelected = DateUtils.isSameDay(date, selectedDate);
@@ -102,7 +102,7 @@ class _CalendarStripState extends ConsumerState<CalendarStrip> {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
+                          color: Colors.black.withValues(alpha: 0.2),
                           blurRadius: 8,
                           offset: const Offset(0, 4),
                         )
