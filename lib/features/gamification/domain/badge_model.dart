@@ -9,6 +9,7 @@ class Badge {
   final int xp;
   final String unlockType;
   final int unlockValue;
+  final Color color;
   final String? timeCondition; // 'morning', 'night', or null
 
   const Badge({
@@ -20,6 +21,7 @@ class Badge {
     required this.xp,
     required this.unlockType,
     required this.unlockValue,
+    required this.color,
     this.timeCondition,
   });
 }
@@ -36,6 +38,7 @@ class BadgeRepository {
       xp: 50,
       unlockType: "session_count",
       unlockValue: 1,
+      color: Colors.orange,
     ),
     Badge(
       id: "three_day_streak",
@@ -46,6 +49,7 @@ class BadgeRepository {
       xp: 100,
       unlockType: "daily_streak",
       unlockValue: 3,
+      color: Colors.deepOrange,
     ),
     Badge(
       id: "seven_day_streak",
@@ -56,6 +60,7 @@ class BadgeRepository {
       xp: 200,
       unlockType: "daily_streak",
       unlockValue: 7,
+      color: Colors.redAccent,
     ),
 
     // FOCUS & PRODUCTIVITY (3)
@@ -68,6 +73,7 @@ class BadgeRepository {
       xp: 150,
       unlockType: "single_session_minutes",
       unlockValue: 60,
+      color: Colors.blue,
     ),
     Badge(
       id: "flow_state",
@@ -78,6 +84,7 @@ class BadgeRepository {
       xp: 200,
       unlockType: "daily_focus_minutes",
       unlockValue: 120,
+      color: Colors.cyan,
     ),
     Badge(
       id: "task_crusher",
@@ -88,6 +95,7 @@ class BadgeRepository {
       xp: 150,
       unlockType: "daily_tasks",
       unlockValue: 10,
+      color: Colors.indigo,
     ),
 
     // PROGRESS & MILESTONES (3)
@@ -100,6 +108,7 @@ class BadgeRepository {
       xp: 75,
       unlockType: "task_completed",
       unlockValue: 5,
+      color: Colors.purple,
     ),
     Badge(
       id: "momentum",
@@ -110,6 +119,7 @@ class BadgeRepository {
       xp: 150,
       unlockType: "task_completed",
       unlockValue: 25,
+      color: Colors.deepPurple,
     ),
     Badge(
       id: "on_fire",
@@ -120,6 +130,7 @@ class BadgeRepository {
       xp: 300,
       unlockType: "task_completed",
       unlockValue: 100,
+      color: Colors.pink,
     ),
 
     // SPECIAL (3)
@@ -132,6 +143,7 @@ class BadgeRepository {
       xp: 100,
       unlockType: "time_of_day",
       unlockValue: 1,
+      color: Colors.amber,
       timeCondition: 'morning',
     ),
     Badge(
@@ -143,6 +155,7 @@ class BadgeRepository {
       xp: 100,
       unlockType: "time_of_day",
       unlockValue: 1,
+      color: Colors.blueGrey,
       timeCondition: 'night',
     ),
     Badge(
@@ -154,6 +167,7 @@ class BadgeRepository {
       xp: 150,
       unlockType: "comeback",
       unlockValue: 7,
+      color: Colors.teal,
     ),
   ];
 

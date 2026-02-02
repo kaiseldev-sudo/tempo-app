@@ -150,66 +150,97 @@ class BadgesScreen extends ConsumerWidget {
     List<Badge> badges,
     List<String> unlockedIds,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.05),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const Gap(12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: badges.map<Widget>((badge) {
-            final isUnlocked = unlockedIds.contains(badge.id);
-            return _buildBadgeCard(badge, isUnlocked);
-          }).toList(),
-        ),
-      ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.2,
+              color: Colors.black87,
+            ),
+          ),
+          const Gap(20),
+          GridView.count(
+            crossAxisCount: 3,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 12,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 0.6, // Increased height to prevent overflow
+            children: badges.map<Widget>((badge) {
+              final isUnlocked = unlockedIds.contains(badge.id);
+              return _buildBadgeCard(badge, isUnlocked);
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildBadgeCard(Badge badge, bool isUnlocked) {
+    final Color badgeColor = isUnlocked ? badge.color : Colors.grey;
+    
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
       decoration: BoxDecoration(
-        color: isUnlocked ? Colors.amber[50] : Colors.grey[100],
+        color: isUnlocked ? badgeColor.withValues(alpha: 0.05) : Colors.grey[100],
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnlocked ? Colors.amber : Colors.grey[300]!,
-          width: 2,
+          color: isUnlocked ? badgeColor.withValues(alpha: 0.2) : Colors.grey[300]!,
+          width: 1.5,
         ),
       ),
       child: Column(
         children: [
           // Icon
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isUnlocked ? Colors.amber : Colors.grey[300],
+              color: isUnlocked ? badgeColor.withValues(alpha: 0.1) : Colors.grey[300],
               shape: BoxShape.circle,
+              border: Border.all(
+                color: isUnlocked ? badgeColor.withValues(alpha: 0.2) : Colors.grey[400]!,
+                width: 1,
+              ),
             ),
             child: Icon(
               badge.icon,
-              color: isUnlocked ? Colors.white : Colors.grey[600],
-              size: 32,
+              color: isUnlocked ? badgeColor : Colors.grey[600],
+              size: 24,
             ),
           ),
           
-          const Gap(12),
+          const Gap(10),
           
           // Title
           Text(
             badge.title,
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 14,
+              fontSize: 12,
               color: isUnlocked ? Colors.black : Colors.grey[600],
+              height: 1.1,
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -222,8 +253,9 @@ class BadgesScreen extends ConsumerWidget {
           Text(
             badge.description,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 9,
               color: isUnlocked ? Colors.grey[700] : Colors.grey[500],
+              height: 1.1,
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
@@ -234,26 +266,30 @@ class BadgesScreen extends ConsumerWidget {
           
           // XP
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: isUnlocked ? Colors.amber : Colors.grey[300],
-              borderRadius: BorderRadius.circular(12),
+              color: isUnlocked ? badgeColor.withValues(alpha: 0.1) : Colors.grey[300],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isUnlocked ? badgeColor.withValues(alpha: 0.2) : Colors.transparent,
+                width: 1,
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.stars,
-                  size: 12,
-                  color: isUnlocked ? Colors.white : Colors.grey[600],
+                  size: 10,
+                  color: isUnlocked ? badgeColor : Colors.grey[600],
                 ),
                 const Gap(4),
                 Text(
                   '+${badge.xp} XP',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
-                    color: isUnlocked ? Colors.white : Colors.grey[600],
+                    color: isUnlocked ? badgeColor : Colors.grey[600],
                   ),
                 ),
               ],

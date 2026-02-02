@@ -73,7 +73,13 @@ class GamificationNotifier extends Notifier<LevelState> {
         if (stats != null) {
           _stats = stats;
           _checkDailyReset();
-          state = _calculateState(stats);
+          // Update state while preserving newly unlocked badges and level up status
+          // as they might be waiting to be displayed by the UI
+          state = _calculateState(
+            stats, 
+            newBadges: state.newlyUnlockedBadges, 
+            leveledUp: state.leveledUp,
+          );
         }
       });
     });
@@ -212,6 +218,11 @@ class GamificationNotifier extends Notifier<LevelState> {
       'xpEarned': xpToAdd,
       'badgeIds': unlockedBadgeIds,
     };
+  }
+
+  void clearNewBadges() {
+    if (_stats == null) return;
+    state = _calculateState(_stats!, newBadges: [], leveledUp: false);
   }
 
   Future<void> checkIn() async {

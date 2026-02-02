@@ -46,12 +46,12 @@ class UserStats extends HiveObject {
     this.tasksCompleted = 0,
     this.sessionsCompleted = 0,
     this.dailyStreak = 0,
-    this.unlockedBadgeIds = const [],
+    List<String>? unlockedBadgeIds,
     this.lastLoginMs = 0,
     this.todayFocusMinutes = 0,
     this.todayTasksCompleted = 0,
     this.longestSingleSession = 0,
     this.lastActiveDate = '',
     this.lastCheckInDate = '',
-  });
+  }) : unlockedBadgeIds = unlockedBadgeIds ?? [];
 }
