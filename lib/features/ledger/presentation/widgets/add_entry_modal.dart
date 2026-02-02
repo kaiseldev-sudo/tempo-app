@@ -55,6 +55,7 @@ class _AddEntryModalState extends ConsumerState<AddEntryModal> {
         ref.read(gamificationProvider.notifier).processAction(
           type: 'focus_session',
           minutes: _durationMinutes,
+          sessionTime: newEntry.startTime,
         );
       }
 

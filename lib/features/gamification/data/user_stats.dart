@@ -25,6 +25,18 @@ class UserStats extends HiveObject {
   @HiveField(6)
   int lastLoginMs;
 
+  @HiveField(7)
+  int todayFocusMinutes; // For daily tracking
+
+  @HiveField(8)
+  int todayTasksCompleted; // For daily tracking
+
+  @HiveField(9)
+  int longestSingleSession; // Track longest session
+
+  @HiveField(10)
+  String lastActiveDate; // Format: YYYY-MM-DD for comeback tracking
+
   UserStats({
     this.currentXp = 0,
     this.totalFocusMinutes = 0,
@@ -33,5 +45,9 @@ class UserStats extends HiveObject {
     this.dailyStreak = 0,
     this.unlockedBadgeIds = const [],
     this.lastLoginMs = 0,
+    this.todayFocusMinutes = 0,
+    this.todayTasksCompleted = 0,
+    this.longestSingleSession = 0,
+    this.lastActiveDate = '',
   });
 }

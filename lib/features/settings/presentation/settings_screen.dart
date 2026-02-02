@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -81,6 +82,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             icon: Icons.privacy_tip_outlined,
             title: "Privacy Policy",
             onTap: () {},
+          ),
+
+          const Gap(24),
+          _buildSectionHeader("Account"),
+          _buildListTile(
+            icon: Icons.logout,
+            title: "Logout",
+            textColor: Colors.red,
+            iconColor: Colors.red,
+            trailing: const SizedBox.shrink(),
+            onTap: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && mounted) {
+                await FirebaseAuth.instance.signOut();
+              }
+            },
           ),
         ],
       ),

@@ -24,13 +24,17 @@ class UserStatsAdapter extends TypeAdapter<UserStats> {
       dailyStreak: fields[4] as int,
       unlockedBadgeIds: (fields[5] as List).cast<String>(),
       lastLoginMs: fields[6] as int,
+      todayFocusMinutes: fields[7] as int,
+      todayTasksCompleted: fields[8] as int,
+      longestSingleSession: fields[9] as int,
+      lastActiveDate: fields[10] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserStats obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.currentXp)
       ..writeByte(1)
@@ -44,7 +48,15 @@ class UserStatsAdapter extends TypeAdapter<UserStats> {
       ..writeByte(5)
       ..write(obj.unlockedBadgeIds)
       ..writeByte(6)
-      ..write(obj.lastLoginMs);
+      ..write(obj.lastLoginMs)
+      ..writeByte(7)
+      ..write(obj.todayFocusMinutes)
+      ..writeByte(8)
+      ..write(obj.todayTasksCompleted)
+      ..writeByte(9)
+      ..write(obj.longestSingleSession)
+      ..writeByte(10)
+      ..write(obj.lastActiveDate);
   }
 
   @override

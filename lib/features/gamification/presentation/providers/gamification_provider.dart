@@ -58,6 +58,7 @@ class GamificationNotifier extends Notifier<LevelState> {
       next.whenData((stats) {
         if (stats != null) {
           _stats = stats;
+          _checkDailyReset();
           state = _calculateState(stats);
         }
       });
@@ -85,6 +86,20 @@ class GamificationNotifier extends Notifier<LevelState> {
     await repository.initializeUserStats(_userId!);
   }
 
+  void _checkDailyReset() {
+    if (_stats == null) return;
+
+    final now = DateTime.now();
+    final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    
+    // Reset daily counters if it's a new day
+    if (_stats!.lastActiveDate != today) {
+      _stats!.todayFocusMinutes = 0;
+      _stats!.todayTasksCompleted = 0;
+      _stats!.lastActiveDate = today;
+    }
+  }
+
   LevelState _calculateState(UserStats stats, {List<Badge> newBadges = const [], bool leveledUp = false}) {
     final level = GameConstants.getLevelForXp(stats.currentXp);
     final nextLevel = GameConstants.getLevelForXp(stats.currentXp + 1);
@@ -102,7 +117,11 @@ class GamificationNotifier extends Notifier<LevelState> {
     );
   }
 
-  Future<void> processAction({required String type, int? minutes}) async {
+  Future<void> processAction({
+    required String type,
+    int? minutes,
+    DateTime? sessionTime,
+  }) async {
     if (_userId == null || _stats == null) return;
 
     final repository = ref.read(userStatsRepositoryProvider);
@@ -114,15 +133,22 @@ class GamificationNotifier extends Notifier<LevelState> {
     if (type == 'focus_session') {
       _stats!.sessionsCompleted += 1;
       _stats!.totalFocusMinutes += (minutes ?? 0);
+      _stats!.todayFocusMinutes += (minutes ?? 0);
+      
+      // Track longest session
+      if (minutes != null && minutes > _stats!.longestSingleSession) {
+        _stats!.longestSingleSession = minutes;
+      }
     } else if (type == 'task_completed') {
       _stats!.tasksCompleted += 1;
+      _stats!.todayTasksCompleted += 1;
     }
     
     // 3. Check for Badge Unlocks
     List<Badge> unlockedBadges = [];
     for (var badge in BadgeRepository.allBadges) {
       if (!_stats!.unlockedBadgeIds.contains(badge.id)) {
-        if (_evaluateUnlockCondition(badge)) {
+        if (_evaluateUnlockCondition(badge, sessionTime: sessionTime)) {
           unlockedBadges.add(badge);
           _stats!.unlockedBadgeIds.add(badge.id);
           xpToAdd += badge.xp;
@@ -158,20 +184,51 @@ class GamificationNotifier extends Notifier<LevelState> {
     state = _calculateState(_stats!, newBadges: unlockedBadges, leveledUp: leveledUp);
   }
 
-  bool _evaluateUnlockCondition(Badge badge) {
+  bool _evaluateUnlockCondition(Badge badge, {DateTime? sessionTime}) {
     if (_stats == null) return false;
 
     switch (badge.unlockType) {
       case 'session_count':
         return _stats!.sessionsCompleted >= badge.unlockValue;
-      case 'total_focus_hours':
-        return _stats!.totalFocusMinutes >= (badge.unlockValue * 60);
+        
       case 'daily_streak':
         return _stats!.dailyStreak >= badge.unlockValue;
+        
       case 'single_session_minutes':
-        return _stats!.totalFocusMinutes >= badge.unlockValue; // Simplified for MVP
+        return _stats!.longestSingleSession >= badge.unlockValue;
+        
+      case 'daily_focus_minutes':
+        return _stats!.todayFocusMinutes >= badge.unlockValue;
+        
+      case 'daily_tasks':
+        return _stats!.todayTasksCompleted >= badge.unlockValue;
+        
       case 'task_completed':
         return _stats!.tasksCompleted >= badge.unlockValue;
+        
+      case 'time_of_day':
+        if (sessionTime == null) return false;
+        final hour = sessionTime.hour;
+        
+        if (badge.timeCondition == 'morning') {
+          // 5 AM - 11 AM
+          return hour >= 5 && hour < 11;
+        } else if (badge.timeCondition == 'night') {
+          // 9 PM - 2 AM
+          return hour >= 21 || hour < 2;
+        }
+        return false;
+        
+      case 'comeback':
+        // Check if user returned after 7+ days
+        if (_stats!.lastActiveDate.isEmpty) return false;
+        
+        final lastActive = DateTime.tryParse(_stats!.lastActiveDate);
+        if (lastActive == null) return false;
+        
+        final daysSinceActive = DateTime.now().difference(lastActive).inDays;
+        return daysSinceActive >= badge.unlockValue;
+        
       default:
         return false;
     }

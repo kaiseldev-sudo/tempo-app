@@ -20,6 +20,10 @@ class UserStatsRepository {
         'dailyStreak': stats.dailyStreak,
         'unlockedBadgeIds': stats.unlockedBadgeIds,
         'lastLoginMs': stats.lastLoginMs,
+        'todayFocusMinutes': stats.todayFocusMinutes,
+        'todayTasksCompleted': stats.todayTasksCompleted,
+        'longestSingleSession': stats.longestSingleSession,
+        'lastActiveDate': stats.lastActiveDate,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
@@ -41,6 +45,10 @@ class UserStatsRepository {
         dailyStreak: data['dailyStreak'] as int? ?? 0,
         unlockedBadgeIds: List<String>.from(data['unlockedBadgeIds'] ?? []),
         lastLoginMs: data['lastLoginMs'] as int? ?? 0,
+        todayFocusMinutes: data['todayFocusMinutes'] as int? ?? 0,
+        todayTasksCompleted: data['todayTasksCompleted'] as int? ?? 0,
+        longestSingleSession: data['longestSingleSession'] as int? ?? 0,
+        lastActiveDate: data['lastActiveDate'] as String? ?? '',
       );
     });
   }
