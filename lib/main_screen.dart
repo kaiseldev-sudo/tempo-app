@@ -20,6 +20,12 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
+    final barColor = Theme.of(context).cardTheme.color ?? Colors.white;
+    final borderColor = isDark ? Colors.white10 : const Color(0xFFEEEEEE);
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -30,25 +36,25 @@ class _MainScreenState extends State<MainScreen> {
         height: 70,
         child: FloatingActionButton(
           onPressed: () => AddEntryModal.show(context),
-          backgroundColor: Colors.black,
+          backgroundColor: primaryColor,
           elevation: 0, // Flat premium look
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24), // Squircle shape
           ),
-          child: const Icon(Icons.add, color: Colors.white, size: 32),
+          child: Icon(Icons.add, color: onPrimaryColor, size: 32),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
-        color: Colors.white,
+        color: barColor,
         shape: const CircularNotchedRectangle(),
         notchMargin: 10,
         elevation: 0, 
         padding: EdgeInsets.zero, // Remove default padding to allow border to stretch
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Color(0xFFEEEEEE), width: 1.0), // Light grey border
+              top: BorderSide(color: borderColor, width: 1.0),
             ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -59,6 +65,7 @@ class _MainScreenState extends State<MainScreen> {
               // Left Side - Ledger
               Expanded(
                 child: _buildNavItem(
+                  context: context,
                   index: 0,
                   icon: Icons.book_outlined,
                   selectedIcon: Icons.book,
@@ -71,6 +78,7 @@ class _MainScreenState extends State<MainScreen> {
               // Right Side - Analysis
               Expanded(
                 child: _buildNavItem(
+                  context: context,
                   index: 1,
                   icon: Icons.pie_chart_outline,
                   selectedIcon: Icons.pie_chart,
@@ -85,12 +93,16 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required int index,
     required IconData icon,
     required IconData selectedIcon,
     required String label,
   }) {
     final isSelected = _currentIndex == index;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
       customBorder: const CircleBorder(),
@@ -100,14 +112,14 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           Icon(
             isSelected ? selectedIcon : icon,
-            color: isSelected ? Colors.black : Colors.grey,
+            color: isSelected ? primaryColor : (isDark ? Colors.grey[500] : Colors.grey),
             size: 26,
           ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isSelected ? Colors.black : Colors.grey,
+              color: isSelected ? primaryColor : (isDark ? Colors.grey[500] : Colors.grey),
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),

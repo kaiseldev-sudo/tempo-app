@@ -53,12 +53,16 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(selectedDateProvider);
     final monthlyActivity = ref.watch(monthlyActivityProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).cardTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.65, // Occupy ~2/3 of screen
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
@@ -69,7 +73,7 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
             height: 4,
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: Colors.grey[300],
+              color: isDark ? Colors.grey[700] : Colors.grey[300],
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -82,11 +86,13 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                 "Select Date",
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
+                  color: textColor,
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
+                color: textColor,
               ),
             ],
           ),
@@ -109,28 +115,29 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
               },
               calendarFormat: CalendarFormat.month,
               startingDayOfWeek: StartingDayOfWeek.monday,
-              headerStyle: const HeaderStyle(
+              headerStyle: HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
-                titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black),
-                rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black),
+                titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                leftChevronIcon: Icon(Icons.chevron_left, color: textColor),
+                rightChevronIcon: Icon(Icons.chevron_right, color: textColor),
               ),
-              calendarStyle: const CalendarStyle(
+              calendarStyle: CalendarStyle(
                 selectedDecoration: BoxDecoration(
-                  color: Colors.black,
+                  color: primaryColor,
                   shape: BoxShape.circle,
                 ),
                 todayDecoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.grey[800] : Colors.white,
                   shape: BoxShape.circle,
+                  border: Border.all(color: primaryColor, width: 1),
                 ),
                 todayTextStyle: TextStyle(
-                  color: Colors.black,
+                  color: textColor,
                   fontWeight: FontWeight.bold,
                 ),
-                defaultTextStyle: TextStyle(fontWeight: FontWeight.w500),
-                weekendTextStyle: TextStyle(color: Colors.grey),
+                defaultTextStyle: TextStyle(fontWeight: FontWeight.w500, color: textColor),
+                weekendTextStyle: const TextStyle(color: Colors.grey),
                 outsideDaysVisible: false,
               ),
               daysOfWeekStyle: const DaysOfWeekStyle(
@@ -146,7 +153,7 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                       spentProgress: activity?.spentProgress ?? 0.0,
                       child: Text(
                         '${day.day}',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: TextStyle(fontWeight: FontWeight.w500, color: textColor),
                       ),
                     ),
                   );
@@ -159,7 +166,7 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                       spentProgress: activity?.spentProgress ?? 0.0,
                       child: Text(
                         '${day.day}',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: TextStyle(fontWeight: FontWeight.w500, color: textColor),
                       ),
                     ),
                   );
@@ -175,13 +182,13 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                         height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 2),
+                          border: Border.all(color: primaryColor, width: 2),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${day.day}',
-                          style: const TextStyle(
-                            color: Colors.black,
+                          style: TextStyle(
+                            color: textColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -194,15 +201,15 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
                     child: Container(
                       width: 40,
                       height: 40,
-                      decoration: const BoxDecoration(
-                        color: Colors.black,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '${day.day}',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -224,12 +231,12 @@ class _MonthViewModalState extends ConsumerState<MonthViewModal> {
               },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: const BorderSide(color: Colors.black),
+                side: BorderSide(color: primaryColor),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text(
+              child: Text(
                 "Jump to Today",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
               ),
             ),
           ),

@@ -13,6 +13,7 @@ class TimeEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isInvested = entry.type == 'invested';
     final startTimeStr = DateFormat('h:mm a').format(entry.startTime);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // Format duration: 60m -> 1h, 90m -> 1h 30m
     String durationText;
@@ -35,12 +36,16 @@ class TimeEntryCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: isInvested ? Colors.black : Colors.grey[100],
+                color: isInvested 
+                    ? Theme.of(context).colorScheme.primary 
+                    : (isDark ? Colors.grey[800] : Colors.grey[100]),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 isInvested ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                color: isInvested ? Colors.white : Colors.grey[600],
+                color: isInvested 
+                    ? Theme.of(context).colorScheme.onPrimary 
+                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
                 size: 22,
               ),
             ),
@@ -54,6 +59,7 @@ class TimeEntryCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           letterSpacing: -0.2,
+                          color: Theme.of(context).textTheme.bodyMedium?.color,
                         ),
                   ),
                   const Gap(2),
@@ -62,7 +68,7 @@ class TimeEntryCard extends StatelessWidget {
                       Text(
                         entry.category.toUpperCase(),
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Colors.grey[500],
+                              color: isDark ? Colors.grey[400] : Colors.grey[500],
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
                             ),
@@ -70,13 +76,16 @@ class TimeEntryCard extends StatelessWidget {
                       const Gap(8),
                       Text(
                         "•",
-                        style: TextStyle(color: Colors.grey[300], fontSize: 10),
+                        style: TextStyle(
+                            color: isDark ? Colors.grey[600] : Colors.grey[300], 
+                            fontSize: 10
+                        ),
                       ),
                       const Gap(8),
                       Text(
                         startTimeStr,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[500],
+                              color: isDark ? Colors.grey[400] : Colors.grey[500],
                             ),
                       ),
                     ],
@@ -89,6 +98,7 @@ class TimeEntryCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.5,
+                    color: Theme.of(context).textTheme.bodyMedium?.color,
                   ),
             ),
           ],

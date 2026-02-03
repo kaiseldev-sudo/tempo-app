@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/ledger/domain/time_entry.dart';
 import 'features/gamification/data/user_stats.dart';
 import 'features/gamification/presentation/widgets/game_overlay_listener.dart';
@@ -44,14 +45,18 @@ void main() async {
   runApp(const ProviderScope(child: TempoApp()));
 }
 
-class TempoApp extends StatelessWidget {
+class TempoApp extends ConsumerWidget {
   const TempoApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(themeProvider);
+    
     return MaterialApp(
       title: 'Tempo',
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
     );

@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:tempo/features/ledger/domain/time_entry.dart';
+import 'package:intl/intl.dart';
 
 class DailyTrendChart extends StatelessWidget {
   final List<TimeEntry> entries;
@@ -9,17 +10,61 @@ class DailyTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group entries by day of week (Mon, Tue, ...)
-    // For MVP, just random data or basic aggregation if available
-    // Assuming simple mock data for trend visual since user wants "screens" created quickly
-    
+    // 1. Generate last 7 days starting from today (in reverse, so most recent is on the right)
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final last7Days = List.generate(7, (index) {
+      return today.subtract(Duration(days: 6 - index));
+    });
+
+    // 2. Initialize and Aggregate data
+    final Map<DateTime, Map<String, double>> dailyData = {
+      for (var date in last7Days) date: {'invested': 0.0, 'spent': 0.0}
+    };
+
+    for (var entry in entries) {
+      final entryDate = DateTime(entry.startTime.year, entry.startTime.month, entry.startTime.day);
+      if (dailyData.containsKey(entryDate)) {
+        final hours = entry.durationMinutes / 60.0;
+        if (entry.type == 'invested') {
+          dailyData[entryDate]!['invested'] = (dailyData[entryDate]!['invested'] ?? 0) + hours;
+        } else {
+          dailyData[entryDate]!['spent'] = (dailyData[entryDate]!['spent'] ?? 0) + hours;
+        }
+      }
+    }
+
+    // 3. Find maxY for dynamic scaling
+    double maxVal = 0;
+    for (var data in dailyData.values) {
+      if (data['invested']! > maxVal) maxVal = data['invested']!;
+      if (data['spent']! > maxVal) maxVal = data['spent']!;
+    }
+    // Set a minimum maxY of 8.0 if everything is 0, otherwise pad by 25%
+    final maxY = maxVal == 0 ? 8.0 : (maxVal * 1.25);
+
     return AspectRatio(
       aspectRatio: 1.7,
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
-          maxY: 16,
-          barTouchData: BarTouchData(enabled: false),
+          maxY: maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (group) => Colors.black.withValues(alpha: 0.8),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                final type = rodIndex == 0 ? "Invested" : "Spent";
+                final hours = rod.toY;
+                final h = hours.toInt();
+                final m = ((hours - h) * 60).round();
+                return BarTooltipItem(
+                  "$type\n${h}h ${m}m",
+                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(
@@ -31,18 +76,16 @@ class DailyTrendChart extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   );
-                  String text;
-                  switch (value.toInt()) {
-                    case 0: text = 'S'; break;
-                    case 1: text = 'M'; break;
-                    case 2: text = 'T'; break;
-                    case 3: text = 'W'; break;
-                    case 4: text = 'T'; break;
-                    case 5: text = 'F'; break;
-                    case 6: text = 'S'; break;
-                    default: text = '';
-                  }
-                  return SideTitleWidget(meta: meta, child: Text(text, style: style));
+                  final index = value.toInt();
+                  if (index < 0 || index >= last7Days.length) return const SizedBox();
+                  
+                  final date = last7Days[index];
+                  final label = DateFormat('E').format(date).substring(0, 1);
+                  
+                  return SideTitleWidget(
+                    meta: meta,
+                    child: Text(label, style: style),
+                  );
                 },
               ),
             ),
@@ -52,15 +95,11 @@ class DailyTrendChart extends StatelessWidget {
           ),
           gridData: const FlGridData(show: false),
           borderData: FlBorderData(show: false),
-          barGroups: [
-            _makeGroupData(0, 4, 2), // Mon: 4h invested, 2h spent
-            _makeGroupData(1, 6, 3),
-            _makeGroupData(2, 8, 1),
-            _makeGroupData(3, 14, 2), // High work day
-            _makeGroupData(4, 14, 2),
-            _makeGroupData(5, 7, 5),
-            _makeGroupData(6, 0, 8),  // Lazy Sunday
-          ],
+          barGroups: List.generate(7, (index) {
+            final date = last7Days[index];
+            final data = dailyData[date]!;
+            return _makeGroupData(index, data['invested']!, data['spent']!);
+          }),
         ),
       ),
     );
@@ -74,13 +113,13 @@ class DailyTrendChart extends StatelessWidget {
         BarChartRodData(
           toY: y1,
           color: Colors.black, // Invested
-          width: 16,
+          width: 12,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
         ),
         BarChartRodData(
           toY: y2,
           color: Colors.grey[400], // Spent
-          width: 16,
+          width: 12,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
         ),
       ],

@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'providers/analysis_provider.dart';
-import 'widgets/daily_trend_chart.dart';
+import 'providers/time_range_notifier.dart';
+import 'widgets/time_trend_chart.dart';
+import '../../ledger/presentation/widgets/month_view_modal.dart';
+import '../../settings/presentation/settings_screen.dart';
 
 class AnalysisScreen extends ConsumerWidget {
   const AnalysisScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final analysisAsync = ref.watch(analysisDataProvider);
+    final analysisAsync = ref.watch(filteredAnalysisDataProvider);
+    final currentFilter = ref.watch(timeRangeFilterProvider);
     
     return Scaffold(
       appBar: AppBar(
@@ -18,15 +22,18 @@ class AnalysisScreen extends ConsumerWidget {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Chip(
-              label: const Text("Last 7 Days"),
-              backgroundColor: Colors.black,
-              labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
-              padding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
+          IconButton(
+            onPressed: () => MonthViewModal.show(context),
+            icon: const Icon(Icons.calendar_month),
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+            icon: const Icon(Icons.settings),
           ),
         ],
       ),
@@ -36,101 +43,115 @@ class AnalysisScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Total Invested Time Card
-              Text("Invested Time", style: TextStyle(color: Colors.grey[600])),
-              const Gap(4),
+              // Filter Buttons
               Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    data.totalInvestedFormatted,
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: _FilterButton(
+                      label: "Last 7 Days",
+                      isSelected: currentFilter == TimeRange.last7Days,
+                      onTap: () => ref.read(timeRangeFilterProvider.notifier).setTimeRange(TimeRange.last7Days),
+                    ),
                   ),
-                  const Gap(8),
-                  Text(
-                    "${data.investedPercentage}%",
-                    style: TextStyle(color: Colors.grey[500], fontSize: 18),
+                  const Gap(12),
+                  Expanded(
+                    child: _FilterButton(
+                      label: "Monthly",
+                      isSelected: currentFilter == TimeRange.monthly,
+                      onTap: () => ref.read(timeRangeFilterProvider.notifier).setTimeRange(TimeRange.monthly),
+                    ),
                   ),
                 ],
               ),
-              const Gap(24),
+              const Gap(20),
 
-              // Total Spent Time
-              Text("Spent Time", style: TextStyle(color: Colors.grey[600])),
-              const Gap(4),
-              Text(
-                data.totalSpentFormatted,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              // Time Trend Chart (moved to top, replaces time overview)
+              TimeTrendChart(
+                entries: data.recentEntries,
+                isLast7Days: currentFilter == TimeRange.last7Days,
+                totalInvestedMinutes: data.totalInvestedMinutes,
+                totalSpentMinutes: data.totalSpentMinutes,
+                investedPercentage: data.investedPercentage,
               ),
-              const Gap(32),
+              const Gap(24),
 
               // Category Breakdown
-              if (data.categoryBreakdown.isNotEmpty) ...[
-                const Text(
-                  "Top Categories",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Text(
+                "Top Categories",
+                style: TextStyle(
+                  fontSize: 20, 
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyMedium?.color,
                 ),
-                const Gap(16),
-                ...(data.categoryBreakdown.entries.toList()
-                    ..sort((a, b) => b.value.compareTo(a.value)))
-                    .take(5)
-                    .map((entry) {
-                      final hours = entry.value ~/ 60;
-                      final minutes = entry.value % 60;
-                      final timeStr = '${hours}h ${minutes}m';
-                      final percent = data.totalMinutes > 0
-                          ? ((entry.value / data.totalMinutes) * 100).round()
-                          : 0;
-                      
-                      return Column(
-                        children: [
-                          _buildCategoryRow(
-                            _getCategoryIcon(entry.key),
-                            entry.key,
-                            timeStr,
-                            '$percent%',
+              ),
+              const Gap(10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardTheme.color ?? Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.grey[800]! 
+                        : Colors.grey[200]!, 
+                    width: 1.5
+                  ),
+                ),
+                child: data.categoryBreakdown.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.category_outlined, 
+                                size: 48, 
+                                color: Theme.of(context).brightness == Brightness.dark 
+                                    ? Colors.grey[700] 
+                                    : Colors.grey[300]
+                              ),
+                              const Gap(12),
+                              Text(
+                                "No data found",
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? Colors.grey[500] 
+                                      : Colors.grey[400],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Gap(12),
-                        ],
-                      );
-                    }),
-                const Gap(24),
-              ],
+                        ),
+                      )
+                    : Column(
+                        children: (data.categoryBreakdown.entries.toList()
+                              ..sort((a, b) => b.value.compareTo(a.value)))
+                            .take(5)
+                            .map((entry) {
+                              final hours = entry.value ~/ 60;
+                              final minutes = entry.value % 60;
+                              final timeStr = '${hours}h ${minutes}m';
+                              final percent = data.totalMinutes > 0
+                                  ? ((entry.value / data.totalMinutes) * 100).round()
+                                  : 0;
+                              
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _buildCategoryRow(
+                                  context,
+                                  _getCategoryIcon(entry.key),
+                                  entry.key,
+                                  timeStr,
+                                  '$percent%',
+                                ),
+                              );
+                            }).toList(),
+                      ),
+              ),
 
-              // Daily Trend (Chart)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Daily Trend",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(backgroundColor: Colors.black, radius: 4),
-                        const Gap(4),
-                        Text("Invested", style: TextStyle(color: Colors.grey[800], fontSize: 12)),
-                        const Gap(12),
-                        CircleAvatar(backgroundColor: Colors.grey[400], radius: 4),
-                        const Gap(4),
-                        Text("Spent", style: TextStyle(color: Colors.grey[800], fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(24),
-              SizedBox(
-                height: 200,
-                child: DailyTrendChart(entries: data.recentEntries),
-              ),
             ],
           ),
         ),
@@ -149,25 +170,40 @@ class AnalysisScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryRow(IconData icon, String label, String duration, String percent) {
+  Widget _buildCategoryRow(BuildContext context, IconData icon, String label, String duration, String percent) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.grey[800]),
+        Icon(icon, size: 20, color: isDark ? Colors.grey[400] : Colors.grey[800]),
         const Gap(12),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 16, 
+              fontWeight: FontWeight.w600,
+              color: textColor,
+            ),
           ),
         ),
         Text(
           duration,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: 16, 
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
         ),
         const Gap(12),
         Text(
           percent,
-          style: TextStyle(color: Colors.grey[500]),
+          style: TextStyle(
+            color: isDark ? Colors.grey[500] : Colors.grey[400],
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -194,5 +230,46 @@ class AnalysisScreen extends ConsumerWidget {
       default:
         return Icons.category;
     }
+  }
+}
+
+// Filter Button Widget
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey[300]!,
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[600],
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

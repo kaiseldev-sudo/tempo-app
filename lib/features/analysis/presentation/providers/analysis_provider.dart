@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../ledger/domain/time_entry.dart';
 import '../../../ledger/data/time_entry_repository.dart';
 import '../../../../core/auth/auth_provider.dart';
+import 'time_range_notifier.dart';
 
 // Analysis Data Model
 class AnalysisData {
@@ -78,4 +79,52 @@ final analysisDataProvider = StreamProvider<AnalysisData>((ref) {
   });
 });
 
+
 final timeEntryRepositoryProvider = Provider((ref) => TimeEntryRepository());
+
+// Import time range filter from separate file
+// (defined in time_range_notifier.dart)
+
+// Analysis Provider with Filter
+final filteredAnalysisDataProvider = StreamProvider<AnalysisData>((ref) {
+  final userId = ref.watch(userIdProvider);
+  final repository = ref.read(timeEntryRepositoryProvider);
+  final timeRange = ref.watch(timeRangeFilterProvider);
+
+  if (userId == null) {
+    return Stream.value(AnalysisData(
+      totalInvestedMinutes: 0,
+      totalSpentMinutes: 0,
+      categoryBreakdown: {},
+      recentEntries: [],
+    ));
+  }
+
+  final now = DateTime.now();
+  final startDate = timeRange == TimeRange.last7Days
+      ? now.subtract(const Duration(days: 7))
+      : DateTime(now.year, now.month, 1); // First day of current month
+
+  return repository.getEntriesByDateRange(userId, startDate, now).map((entries) {
+    int investedMinutes = 0;
+    int spentMinutes = 0;
+    Map<String, int> categories = {};
+
+    for (var entry in entries) {
+      if (entry.type == 'invested') {
+        investedMinutes += entry.durationMinutes;
+      } else {
+        spentMinutes += entry.durationMinutes;
+      }
+
+      categories[entry.category] = (categories[entry.category] ?? 0) + entry.durationMinutes;
+    }
+
+    return AnalysisData(
+      totalInvestedMinutes: investedMinutes,
+      totalSpentMinutes: spentMinutes,
+      categoryBreakdown: categories,
+      recentEntries: entries,
+    );
+  });
+});

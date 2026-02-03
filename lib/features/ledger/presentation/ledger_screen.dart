@@ -45,7 +45,7 @@ class LedgerScreen extends ConsumerWidget {
               clipBehavior: Clip.antiAlias,
               margin: const EdgeInsets.only(right: 24, left: 24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardTheme.color ?? Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
                 boxShadow: [
                   BoxShadow(
@@ -66,21 +66,26 @@ class LedgerScreen extends ConsumerWidget {
                           "Daily Log",
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: Colors.grey[800],
+                            color: Theme.of(context).textTheme.bodyMedium?.color, // Use theme text color
                           ),
                         ),
                         const Spacer(),
                         Text(
                           DateFormat('E, MMM d').format(selectedDate),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey[500],
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.grey[400] 
+                                : Colors.grey[500],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Divider(height: 1, color: Colors.grey[50]),
+                  Divider(
+                    height: 1, 
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.1)
+                  ),
                   Expanded(
                     child: entriesAsync.when(
                       data: (entries) {
@@ -89,12 +94,20 @@ class LedgerScreen extends ConsumerWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.access_time_rounded, size: 48, color: Colors.grey[200]),
+                                Icon(
+                                  Icons.access_time_rounded, 
+                                  size: 48, 
+                                  color: Theme.of(context).brightness == Brightness.dark 
+                                      ? Colors.grey[700] 
+                                      : Colors.grey[200]
+                                ),
                                 const Gap(16),
                                 Text(
                                   "No entries yet",
                                   style: TextStyle(
-                                    color: Colors.grey[400],
+                                    color: Theme.of(context).brightness == Brightness.dark 
+                                        ? Colors.grey[500] 
+                                        : Colors.grey[400],
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -107,7 +120,7 @@ class LedgerScreen extends ConsumerWidget {
                           itemCount: entries.length,
                           separatorBuilder: (context, index) => Divider(
                             height: 1,
-                            color: Colors.grey[100],
+                            color: Theme.of(context).dividerColor.withValues(alpha: 0.1),
                             indent: 60, // Align with the start of the text (skipping the icon)
                           ),
                           itemBuilder: (context, index) {

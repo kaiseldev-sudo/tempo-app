@@ -11,23 +11,29 @@ class XPHistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(xpHistoryProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'XP History',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: textColor,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context) 
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
       ),
       body: historyAsync.when(
         data: (history) {
@@ -36,13 +42,13 @@ class XPHistoryScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.history, size: 64, color: Colors.grey[300]),
+                  Icon(Icons.history, size: 64, color: isDark ? Colors.grey[700] : Colors.grey[300]),
                   const Gap(16),
                   Text(
                     'No XP history yet',
                     style: TextStyle(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -51,7 +57,7 @@ class XPHistoryScreen extends ConsumerWidget {
                     'Complete tasks or focus sessions to earn XP!',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[400],
+                      color: isDark ? Colors.grey[600] : Colors.grey[400],
                     ),
                   ),
                 ],
@@ -76,9 +82,11 @@ class XPHistoryScreen extends ConsumerWidget {
               return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: cardColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[100]!),
+                  border: Border.all(
+                    color: isDark ? Colors.white10 : Colors.grey[100]!,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -101,9 +109,10 @@ class XPHistoryScreen extends ConsumerWidget {
                         children: [
                           Text(
                             description,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
+                              color: textColor,
                             ),
                           ),
                           const Gap(4),
@@ -111,7 +120,7 @@ class XPHistoryScreen extends ConsumerWidget {
                             date,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[500],
+                              color: isDark ? Colors.grey[400] : Colors.grey[500],
                             ),
                           ),
                         ],

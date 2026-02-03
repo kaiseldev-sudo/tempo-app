@@ -23,6 +23,9 @@ class GamificationStatsSummary extends ConsumerWidget {
       }
     });
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? Colors.grey[800]! : Colors.grey[200]!;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Column(
@@ -31,10 +34,11 @@ class GamificationStatsSummary extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED), // Soft minimalist orange
+              color: isDark ? const Color(0xFF2D2620) : const Color(0xFFFFF7ED), // Dark orange tint vs Light
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFFFEDD5)), // Subtle orange-tinted border
-              // Removed boxShadow (glow effect) as requested
+              border: Border.all(
+                color: isDark ? const Color(0xFF4A3B2F) : const Color(0xFFFFEDD5)
+              ),
             ),
             child: Row(
               children: [
@@ -44,10 +48,11 @@ class GamificationStatsSummary extends ConsumerWidget {
                   children: [
                     Text(
                       'Level ${gameState.currentLevel}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: -0.5,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
                     Text(
@@ -55,7 +60,7 @@ class GamificationStatsSummary extends ConsumerWidget {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[500],
+                        color: isDark ? Colors.grey[400] : Colors.grey[500],
                         letterSpacing: 1,
                       ),
                     ),
@@ -76,17 +81,18 @@ class GamificationStatsSummary extends ConsumerWidget {
                           height: 54,
                           child: CircularProgressIndicator(
                             value: value,
-                            backgroundColor: Colors.grey[100],
-                            color: Colors.black,
+                            backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                            color: Theme.of(context).colorScheme.primary,
                             strokeWidth: 5,
                             strokeCap: StrokeCap.round,
                           ),
                         ),
                         Text(
                           '${(value * 100).toInt()}%',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
+                            color: Theme.of(context).textTheme.bodyMedium?.color,
                           ),
                         ),
                       ],
@@ -103,6 +109,7 @@ class GamificationStatsSummary extends ConsumerWidget {
               // Streak
               Expanded(
                 child: _buildStatContainer(
+                  context,
                   icon: Icons.local_fire_department_rounded,
                   value: '${gameState.dailyStreak}',
                   label: 'Streak',
@@ -115,6 +122,7 @@ class GamificationStatsSummary extends ConsumerWidget {
               // Badges
               Expanded(
                 child: _buildStatContainer(
+                  context,
                   icon: Icons.emoji_events_rounded,
                   value: '${unlockedIds.length}',
                   label: 'Badges',
@@ -136,6 +144,7 @@ class GamificationStatsSummary extends ConsumerWidget {
               // XP
               Expanded(
                 child: _buildStatContainer(
+                  context,
                   icon: Icons.stars_rounded,
                   value: '${gameState.currentXp}',
                   label: 'Total XP',
@@ -161,8 +170,8 @@ class GamificationStatsSummary extends ConsumerWidget {
               child: ElevatedButton(
                 onPressed: () => ref.read(gamificationProvider.notifier).checkIn(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
@@ -191,9 +200,9 @@ class GamificationStatsSummary extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: isDark ? Colors.grey[900] : Colors.grey[50],
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: borderColor),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -204,7 +213,7 @@ class GamificationStatsSummary extends ConsumerWidget {
                     'Daily Check-in Complete',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.grey[700],
+                      color: isDark ? Colors.grey[400] : Colors.grey[700],
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -216,7 +225,8 @@ class GamificationStatsSummary extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatContainer({
+  Widget _buildStatContainer(
+    BuildContext context, {
     required IconData icon,
     required String value,
     required String label,
@@ -224,14 +234,16 @@ class GamificationStatsSummary extends ConsumerWidget {
     required VoidCallback onTap,
     required int index,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardTheme.color ?? Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey[200]!),
+          border: Border.all(color: isDark ? Colors.grey[800]! : Colors.grey[200]!),
         ),
         child: Column(
           children: [
@@ -249,10 +261,11 @@ class GamificationStatsSummary extends ConsumerWidget {
             const Gap(8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: -0.5,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
             ),
             Text(
@@ -260,7 +273,7 @@ class GamificationStatsSummary extends ConsumerWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[500],
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
               ),
             ),
           ],

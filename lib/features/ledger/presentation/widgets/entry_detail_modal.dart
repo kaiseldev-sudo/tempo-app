@@ -21,6 +21,11 @@ class EntryDetailModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isInvested = entry.type == 'invested';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).cardTheme.color ?? Colors.white;
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final onPrimaryColor = Theme.of(context).colorScheme.onPrimary;
     
     // Format duration
     String durationText;
@@ -36,9 +41,9 @@ class EntryDetailModal extends StatelessWidget {
     final timeText = DateFormat('h:mm a').format(entry.startTime);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -51,6 +56,7 @@ class EntryDetailModal extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context),
+                color: textColor,
               ),
               Expanded(
                 child: Text(
@@ -58,6 +64,7 @@ class EntryDetailModal extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: textColor,
                       ),
                 ),
               ),
@@ -70,7 +77,9 @@ class EntryDetailModal extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isInvested ? Colors.black : Colors.grey[50],
+              color: isInvested 
+                  ? primaryColor 
+                  : (isDark ? Colors.grey[800] : Colors.grey[50]),
               borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
@@ -86,14 +95,16 @@ class EntryDetailModal extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: isInvested ? Colors.white : Colors.black,
+                            color: isInvested ? onPrimaryColor : textColor,
                           ),
                         ),
                         Text(
                           entry.category,
                           style: TextStyle(
                             fontSize: 14,
-                            color: isInvested ? Colors.white60 : Colors.grey[600],
+                            color: isInvested 
+                                ? onPrimaryColor.withValues(alpha: 0.7) 
+                                : (isDark ? Colors.grey[400] : Colors.grey[600]),
                           ),
                         ),
                       ],
@@ -101,7 +112,7 @@ class EntryDetailModal extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: isInvested ? Colors.white24 : Colors.black12,
+                        color: isInvested ? onPrimaryColor.withValues(alpha: 0.2) : (isDark ? Colors.black26 : Colors.black12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -110,7 +121,7 @@ class EntryDetailModal extends StatelessWidget {
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1,
-                          color: isInvested ? Colors.white : Colors.black,
+                          color: isInvested ? onPrimaryColor : textColor,
                         ),
                       ),
                     ),
@@ -123,12 +134,18 @@ class EntryDetailModal extends StatelessWidget {
                     _buildSubStat(
                       label: "DURATION",
                       value: durationText,
-                      isDark: isInvested,
+                      textColor: isInvested ? onPrimaryColor : textColor,
+                      subTextColor: isInvested 
+                          ? onPrimaryColor.withValues(alpha: 0.7) 
+                          : (isDark ? Colors.grey[400]! : Colors.grey[500]!),
                     ),
                     _buildSubStat(
                       label: "TIME",
                       value: timeText,
-                      isDark: isInvested,
+                      textColor: isInvested ? onPrimaryColor : textColor,
+                      subTextColor: isInvested 
+                          ? onPrimaryColor.withValues(alpha: 0.7) 
+                          : (isDark ? Colors.grey[400]! : Colors.grey[500]!),
                     ),
                   ],
                 ),
@@ -164,10 +181,10 @@ class EntryDetailModal extends StatelessWidget {
                 children: [
                   const Icon(Icons.stars, color: Colors.amber, size: 28),
                   const Gap(16),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       "XP Earned",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: textColor),
                     ),
                   ),
                   Text(
@@ -184,10 +201,10 @@ class EntryDetailModal extends StatelessWidget {
           
           if (entry.unlockedBadgeIds != null && entry.unlockedBadgeIds!.isNotEmpty) ...[
             const Gap(24),
-            const Text(
+            Text(
               "Badges Unlocked",
               textAlign: TextAlign.center,
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.grey[400] : Colors.grey),
             ),
             const Gap(12),
             Wrap(
@@ -204,10 +221,10 @@ class EntryDetailModal extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: isDark ? Colors.grey[800] : Colors.grey[100],
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(badge.icon, color: Colors.black, size: 24),
+                        child: Icon(badge.icon, color: textColor, size: 24),
                       ),
                       const Gap(4),
                       Text(
@@ -215,7 +232,7 @@ class EntryDetailModal extends StatelessWidget {
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
                       ),
                     ],
                   ),
@@ -227,9 +244,10 @@ class EntryDetailModal extends StatelessWidget {
           const Gap(32),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
+            // Theme default style should handle colors, but enforcing inverted
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
+              backgroundColor: primaryColor,
+              foregroundColor: onPrimaryColor,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             ),
@@ -241,14 +259,19 @@ class EntryDetailModal extends StatelessWidget {
     );
   }
 
-  Widget _buildSubStat({required String label, required String value, required bool isDark}) {
+  Widget _buildSubStat({
+    required String label, 
+    required String value, 
+    required Color textColor,
+    required Color subTextColor,
+  }) {
     return Column(
       children: [
         Text(
           label,
           style: TextStyle(
             fontSize: 10,
-            color: isDark ? Colors.white54 : Colors.grey[500],
+            color: subTextColor,
             letterSpacing: 1,
             fontWeight: FontWeight.w900,
           ),
@@ -259,7 +282,7 @@ class EntryDetailModal extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black,
+            color: textColor,
           ),
         ),
       ],

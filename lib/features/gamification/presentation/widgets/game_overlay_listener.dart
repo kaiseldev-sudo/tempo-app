@@ -44,20 +44,19 @@ class _GameOverlayListenerState extends ConsumerState<GameOverlayListener> {
         debugPrint("🏆 TRIGGER: Showing Badge Popup for: ${next.newlyUnlockedBadges.map((b) => b.title)}");
         
         _showBadgePopup(context, next.newlyUnlockedBadges).then((_) {
-          if (mounted) {
-            _confettiController.play();
-            
-            if (next.leveledUp) {
-              _showLevelUpPopup(context, next.currentLevel, next.title).then((_) {
-                if (mounted) {
-                  _confettiController.play();
-                  ref.read(gamificationProvider.notifier).clearNewBadges();
-                }
-              });
-            } else {
-              // Clear badges if no level up is pending
-              ref.read(gamificationProvider.notifier).clearNewBadges();
-            }
+          if (!context.mounted) return;
+          _confettiController.play();
+          
+          if (next.leveledUp) {
+            _showLevelUpPopup(context, next.currentLevel, next.title).then((_) {
+              if (context.mounted) {
+                _confettiController.play();
+                ref.read(gamificationProvider.notifier).clearNewBadges();
+              }
+            });
+          } else {
+            // Clear badges if no level up is pending
+            ref.read(gamificationProvider.notifier).clearNewBadges();
           }
         });
       } else if (hasLevelUp && !hadLevelUp && !hasBadges) {

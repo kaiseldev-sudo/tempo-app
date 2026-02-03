@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/theme/theme_provider.dart';
+import 'providers/notification_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -29,12 +31,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = ref.watch(themeProvider);
+    final notificationsEnabled = ref.watch(notificationProvider);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text("Settings", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
       ),
       body: ListView(
         children: [
@@ -43,12 +45,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildListTile(
             icon: Icons.dark_mode_outlined,
             title: "Dark Mode",
-            trailing: Switch(value: false, onChanged: (val) {}), // Placeholder
+            trailing: Switch(
+              value: isDarkMode,
+              onChanged: (val) => ref.read(themeProvider.notifier).setTheme(val),
+            ),
           ),
           _buildListTile(
             icon: Icons.notifications_outlined,
             title: "Notifications",
-            trailing: Switch(value: true, onChanged: (val) {}), // Placeholder
+            trailing: Switch(
+              value: notificationsEnabled,
+              onChanged: (val) => ref.read(notificationProvider.notifier).setNotifications(val),
+            ),
           ),
           
           const Gap(24),
@@ -130,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          color: Colors.grey[600],
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[400] : Colors.grey[600],
           fontSize: 12,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -148,12 +156,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     Color? iconColor,
   }) {
     return ListTile(
-      leading: Icon(icon, color: iconColor ?? Colors.black),
+      leading: Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.onSurface),
       title: Text(
         title, 
         style: TextStyle(
           fontWeight: FontWeight.w500, 
-          color: textColor ?? Colors.black,
+          color: textColor ?? Theme.of(context).colorScheme.onSurface,
         ),
       ),
       trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.grey),
